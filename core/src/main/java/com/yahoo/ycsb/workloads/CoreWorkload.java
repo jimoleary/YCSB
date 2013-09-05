@@ -174,6 +174,16 @@ public class CoreWorkload extends Workload
 	public static final String INSERT_PROPORTION_PROPERTY="insertproportion";
 	
 	/**
+	 * The name of the property for the proportion of transactions that are deletes.
+	 */
+	public static final String DELETE_PROPORTION_PROPERTY="deleteproportion";
+	
+	/**
+	 * The default proportion of transactions that are deletes.
+	 */
+	public static final String DELETE_PROPORTION_PROPERTY_DEFAULT="0.00";
+
+	/**
 	 * The default proportion of transactions that are inserts.
 	 */
 	public static final String INSERT_PROPORTION_PROPERTY_DEFAULT="0.0";
@@ -311,6 +321,7 @@ public class CoreWorkload extends Workload
 		double readproportion=Double.parseDouble(p.getProperty(READ_PROPORTION_PROPERTY,READ_PROPORTION_PROPERTY_DEFAULT));
 		double updateproportion=Double.parseDouble(p.getProperty(UPDATE_PROPORTION_PROPERTY,UPDATE_PROPORTION_PROPERTY_DEFAULT));
 		double insertproportion=Double.parseDouble(p.getProperty(INSERT_PROPORTION_PROPERTY,INSERT_PROPORTION_PROPERTY_DEFAULT));
+		double deleteproportion=Double.parseDouble(p.getProperty(DELETE_PROPORTION_PROPERTY,DELETE_PROPORTION_PROPERTY_DEFAULT));
 		double scanproportion=Double.parseDouble(p.getProperty(SCAN_PROPORTION_PROPERTY,SCAN_PROPORTION_PROPERTY_DEFAULT));
 		double readmodifywriteproportion=Double.parseDouble(p.getProperty(READMODIFYWRITE_PROPORTION_PROPERTY,READMODIFYWRITE_PROPORTION_PROPERTY_DEFAULT));
 		recordcount=Integer.parseInt(p.getProperty(Client.RECORD_COUNT_PROPERTY));
@@ -360,6 +371,11 @@ public class CoreWorkload extends Workload
 		if (scanproportion>0)
 		{
 			operationchooser.addValue(scanproportion,"SCAN");
+		}
+		
+		if (deleteproportion>0)
+		{
+			operationchooser.addValue(deleteproportion,"DELETE");
 		}
 		
 		if (readmodifywriteproportion>0)
@@ -486,6 +502,10 @@ public class CoreWorkload extends Workload
 		{
 			doTransactionInsert(db);
 		}
+		else if (op.compareTo("DELETE")==0)
+		{
+			doTransactionDelete(db);
+		}
 		else if (op.compareTo("SCAN")==0)
 		{
 			doTransactionScan(db);
@@ -535,6 +555,24 @@ public class CoreWorkload extends Workload
 		}
 
 		db.read(table,keyname,fields,new HashMap<String,ByteIterator>());
+	}
+	
+        public void doTransactionDelete(DB db)
+	{
+		//choose a random key
+		int keynum = nextKeynum();
+
+		String keyname = buildKeyName(keynum);
+
+		//do the transaction
+		
+		long st=System.nanoTime();
+
+		db.delete(table,keyname);
+		
+		long en=System.nanoTime();
+		
+		Measurements.getMeasurements().measure("DELETE", (int)((en-st)/1000));
 	}
 	
 	public void doTransactionReadModifyWrite(DB db)
